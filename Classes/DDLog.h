@@ -597,7 +597,7 @@ typedef NS_OPTIONS(NSInteger, DDLogMessageOptions) {
                           line:(int)line
                            tag:(id)tag
                        options:(DDLogMessageOptions)optionsMask
-                     timestamp:(NSDate *)aTimestamp NS_DESIGNATED_INITIALIZER;
+                     timestamp:(NSDate *)aTimestamp /*NS_DESIGNATED_INITIALIZER*/;
 
 /**
  * Returns the threadID as it appears in NSLog.

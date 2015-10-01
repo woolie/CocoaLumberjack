@@ -327,7 +327,7 @@ extern unsigned long long const kDDDefaultLogFilesDiskQuota;
 
 + (instancetype)logFileWithPath:(NSString *)filePath;
 
-- (instancetype)initWithFilePath:(NSString *)filePath NS_DESIGNATED_INITIALIZER;
+- (instancetype)initWithFilePath:(NSString *)filePath /*NS_DESIGNATED_INITIALIZER*/;
 
 - (void)reset;
 - (void)renameFile:(NSString *)newFileName;
