@@ -4,33 +4,31 @@ Dynamically changing log levels during run-time
 
 When you define your log level, you generally define it in a manner similar to this:
 ```objective-c
-static const int ddLogLevel = LOG_LEVEL_WARN;
+static const DDLogLevel ddLogLevel = DDLogLevelWarn;
 ```
 
 What this means is that your log level is declared as a constant. It cannot be changed.\
 
-This has the advantage that the compiler can automatically prune DDLog statements above the log level threshold during compilation.  However, it also has the disadvantage that you cannot change your log level during run-time.
+This has the advantage that the compiler can automatically prune `DDLog` statements above the log level threshold during compilation.  However, it also has the disadvantage that you cannot change your log level during run-time.
 
 To allow a dynamic log level, all we need to do is remove the "const" part:
 ```objective-c
-static int ddLogLevel = LOG_LEVEL_WARN;
+static DDLogLevel ddLogLevel = DDLogLevelWarn;
 ```
 
 This means that we can change the log level when/how we want. For example, maybe we're debugging some specific part of our application.
 ```objective-c
-- (void)startTask
-{
-    ddLogLevel = LOG_LEVEL_VERBOSE;
+- (void)startTask {
+    ddLogLevel = DDLogLevelVerbose;
     [self startTaskInBackground];
 }
 
-- (void)taskDidFinish
-{
-    ddLogLevel = LOG_LEVEL_WARN;
+- (void)taskDidFinish {
+    ddLogLevel = DDLogLevelWarn;
 }
 ```
 
-You will incur a tiny little performance penalty for using dynamic log levels. (A single integer comparison... gasp!) However, due to the architecture and speed of the lumberjack framework, most DDLog statements will **still be faster than NSLog**. (For more information, see the [[performance | Performance]] page.)
+You will incur a tiny little performance penalty for using dynamic log levels. (A single integer comparison... gasp!) However, due to the architecture and speed of the lumberjack framework, most DDLog statements will **still be faster than NSLog**. (For more information, see the [performance](Performance.md) page.)
 
 ### Crazy Awesomeness
 
@@ -38,7 +36,7 @@ Dynamic logging, as used in the example above, can be helpful for debugging.\
 
 **But what if we wanted to take it to the next level?**
 
-Imagine if you could alter log levels via the NSUserDefaults system...\
+Imagine if you could alter log levels via the `NSUserDefaults` system...\
 
 A user is complaining about the application not acting properly (in the preference pane somewhere). So you simply tell them to issue a
 ```objective-c
@@ -47,13 +45,13 @@ defaults write com.yourapp.prefsLogLevel 4
 
 And in your preference pane code, you have something like this:
 ```objective-c
-static int ddLogLevel = LOG_LEVEL_WARN;
+static DDLogLevel ddLogLevel = DDLogLevelWarn;
 
-+ (void)initialize
-{
++ (void)initialize {
     NSNumber *logLevel = [[NSUserDefaults standardUserDefaults] objectForKey:@"prefsLogLevel"];
-    if (logLevel)
-        ddLogLevel = [logLevel intValue];
+    if (logLevel) {
+        ddLogLevel = (DDLogLevel)[logLevel intValue];
+    }
 }
 ```
 
@@ -77,17 +75,15 @@ The lumberjack framework has something called "registered dynamic logging". Here
 #import "Sprocket.h"
 #import "DDLog.h"
 
-static int ddLogLevel = LOG_LEVEL_WARN;
+static DDLogLevel ddLogLevel = DDLogLevelWarn;
 
 @implementation Sprocket
 
-+ (int)ddLogLevel
-{
++ (DDLogLevel)ddLogLevel {
     return ddLogLevel;
 }
 
-+ (void)ddSetLogLevel:(int)logLevel
-{
++ (void)ddSetLogLevel:(DDLogLevel)logLevel {
     ddLogLevel = logLevel;
 }
 
@@ -111,15 +107,15 @@ Now take a look at the registered dynamic logging section of DDLog:
 + (NSArray *)registeredClasses;
 + (NSArray *)registeredClassNames;
 
-+ (int)logLevelForClass:(Class)aClass;
-+ (int)logLevelForClassWithName:(NSString *)aClassName;
++ (DDLogLevel)levelForClass:(Class)aClass;
++ (DDLogLevel)levelForClassWithName:(NSString *)aClassName;
 
-+ (void)setLogLevel:(int)logLevel forClass:(Class)aClass;
-+ (void)setLogLevel:(int)logLevel forClassWithName:(NSString *)aClassName;
++ (void)setLevel:(DDLogLevel)level forClass:(Class)aClass;
++ (void)setLevel:(DDLogLevel)level forClassWithName:(NSString *)aClassName;
 ```
 
 So if you call ` [DDLog registeredClasses] `, it would return an array that contains the Sprocket class.
 
-And if you call ` [DDLog logLevelForClass:[Sprocket class]] `, it will invoke and return ` [Sprocket ddLogLevel] `.
+And if you call ` [DDLog levelForClass:[Sprocket class]] `, it will invoke and return ` [Sprocket ddLogLevel] `.
 
 What this means is that you can easily enumerate through all the classes (or class names) that use registered dynamic logging. You don't have to keep a big list somewhere. Or even import all the header files. You can just enumerate a list, and the lumberjack framework takes care of the rest.

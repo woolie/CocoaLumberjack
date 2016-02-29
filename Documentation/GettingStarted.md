@@ -1,27 +1,96 @@
-_Getting started with the lumberjack framework._
+_Getting started with the CocoaLumberjack framework._
 
 ***
 
 There are 3 steps to getting started with the logging framework:
 
-1.  Add the lumberjack files to your project.
-2.  Configure the framework.
-3.  Convert your NSLog statements to use the Lumberjack macros
+1.  Add the CocoaLumberjack files to your project
+2.  Access and configure the framework
+3.  Convert your NSLog statements to use the CocoaLumberjack macros
 
-### Add the lumberjack files to your project
+### Add CocoaLumberjack to your project
 
-The main files you need to add are:
+#### CocoaPods
 
--   DDLog (Basis of entire framework)
--   DDASLLogger (sends log statements to Apple System Logger, so they show up on Console.app)
--   DDTTYLogger (sends log statements to Xcode console - if available)
--   DDFileLogger (sends log statements to a file)
+```ruby
+	platform :ios, '8.0'
+	pod 'CocoaLumberjack'
+```
 
-DDLog is mandatory, and the others are optional depending on how you intend to use the framework. For example, if you don't intend to log to a file, you can skip DDFileLogger. Or if you want to skip ASL in favor of faster file logging, you could skip DDASLLogger.
+#### Carthage
 
-### Configure the framework
+* Cartfile
+```
+	github "CocoaLumberjack/CocoaLumberjack"
+```
 
-One of first things you'll want to do in your application is configure the logging framework. This is normally done in the applicationDidFinishLaunching method.
+#### Manual installation
+
+_Please note, installation via CocoaPods or Carthage is much simpler and recommended by the development team_
+
+* Add in the CocoaLumberjack files to your project using git submodules
+
+```
+	git submodule add https://git@github.com/CocoaLumberjack/CocoaLumberjack.git
+```
+
+* Drag `CocoaLumberjack/Lumberjack.xcodeproj` into your project
+* In your application target Build Phases
+	* Add the framework you need
+		* `CocoaLumberjack` or `CocoaLumberjackSwift` for OS X
+		* `CocoaLumberjack-iOS` or `CocoaLumberjackSwift-iOS` for iOS
+		* `CocoaLumberjack-watchOS` or `CocoaLumberjackSwift-watchOS` for watchOS
+		* `CocoaLumberjack-tvOS` or `CocoaLumberjackSwift-tvOS` for tvOS
+* Make this CocoaLumberjack framework a dependency for your application target
+* Add a Copy Files phase to the application bundle 
+	* This needs to specify the _Frameworks_ sub-folder
+	* Drag in the CocoaLumberjack.framework from the Lumberjack.xcodeproj products group
+	* _Note: be careful to include only your relevant platform product_
+
+#### Manual installation (iOS static library)
+
+Consider this method if you favour static libraries over frameworks or have to use the static library.
+
+* Add in the CocoaLumberjack files to your project using git submodules
+
+```
+	git submodule add https://git@github.com/CocoaLumberjack/CocoaLumberjack.git
+```
+
+* Drag `CocoaLumberjack/Lumberjack.xcodeproj` into your project
+* Make the `CocoaLumberjack-iOS-Static` a dependency for your application target
+* Add the `CocoaLumberjack-iOS-Static` to the `Link Binary` phase
+* Add `"$(BUILT_PRODUCTS_DIR)/include"` to the `Header Search Paths`
+
+#### Even more manual installation
+
+Consider this method if you want to more easily modify target build settings, have other complex needs or simply prefer to do things by hand.
+
+* Download the CocoaLumberjack files using git clone
+
+```
+	git clone https://git@github.com/CocoaLumberjack/CocoaLumberjack.git
+```
+
+* Copy just the .m/.h files from CocoaLumberjack/Classes into your project
+	* Including the .swift file if relevant
+	* Ignore the contents of the CLI and Extensions folders for basic use
+* Add a separate CocoaLumberjack static library target
+	* This will build e.g. a libCocoaLumberjack.a static library
+* From time-to-time, git pull, re-copy and commit the updated CocoaLumberjack files
+
+### Access and configure the framework
+
+* Access the CocoaLumberjack framework by adding the following lines to a precompiled header (.pch) file
+	* _Note: newer Xcode projects do not create a .pch file by default but using one eases access to CocoaLumberjack through your project_
+	* _Note: #defining LOG\_LEVEL\_DEF before #importing the framework is currently required, but has been under discussion in the early 2.x series_
+
+```objective-c
+#define LOG_LEVEL_DEF ddLogLevel
+#import <CocoaLumberjack/CocoaLumberjack.h>
+```
+
+* Configure CocoaLumberjack (typically in the applicationDidFinishLaunching method)
 
 A couple lines of code is all you need to get started:
 
@@ -35,7 +104,7 @@ This will add a pair of "loggers" to the logging framework. In other words, your
 Part of the power of the logging framework is its flexibility. If you also wanted your log statements to be written to a file, then you could add and configure a file logger:
 
 ```objective-c
-fileLogger = [[DDFileLogger alloc] init];
+DDFileLogger *fileLogger = [[DDFileLogger alloc] init];
 fileLogger.rollingFrequency = 60 * 60 * 24; // 24 hour rolling
 fileLogger.logFileManager.maximumNumberOfLogFiles = 7;
 
@@ -43,6 +112,16 @@ fileLogger.logFileManager.maximumNumberOfLogFiles = 7;
 ```
 
 The above code tells the application to keep a week's worth of log files on the system.
+
+You will also need to set a global log level for your application. This can be modified in different manners later (see the bottom of this document for more information).
+
+To do this, simply define the `ddLogLevel` constant. One example of this may be in your .pch file like so:
+
+```objective-c
+static const DDLogLevel ddLogLevel = DDLogLevelDebug;
+```
+
+This global log level will be used as a default unless stated otherwise. See below for possible levels you can set this to.
 
 ### Convert your NSLog statements to DDLog
 
@@ -68,22 +147,22 @@ So all you need to do is decide which log level each NSLog statement belongs to.
 -   DDLogDebug
 -   DDLogVerbose
 
-(You can also [[customize the levels or the level names | CustomLogLevels]]. Or you can [[add fine-grained control on top of or instead of simple levels | FineGrainedLogging]].)
+(You can also [customize the levels or the level names](CustomLogLevels.md). Or you can [add fine-grained control on top of or instead of simple levels](FineGrainedLogging.md).)
 
 Which log level you choose per NSLog statement depends, of course, on the severity of the message.
 
 These tie into the log level just as you would expect
 
--   If you set the log level to LOG\_LEVEL\_ERROR, then you will only see DDLogError statements.
--   If you set the log level to LOG\_LEVEL\_WARN, then you will only see DDLogError and DDLogWarn statements.
--   If you set the log level to LOG\_LEVEL\_INFO, you'll see Error, Warn and Info statements.
--   If you set the log level to LOG\_LEVEL\_DEBUG, you'll see Error, Warn, Info and Debug statements.
--   If you set the log level to LOG\_LEVEL\_VERBOSE, you'll see all DDLog statements.
--   If you set the log level to LOG\_LEVEL\_OFF, you won't see any DDLog statements.
+-   If you set the log level to DDLogLevelError, then you will only see Error statements.
+-   If you set the log level to DDLogLevelWarn, then you will only see Error and Warn statements.
+-   If you set the log level to DDLogLevelInfo, you'll see Error, Warn and Info statements.
+-   If you set the log level to DDLogLevelDebug, you'll see Error, Warn, Info and Debug statements.
+-   If you set the log level to DDLogLevelVerbose, you'll see all DDLog statements.
+-   If you set the log level to DDLogLevelOff, you won't see any DDLog statements.
 
 Where do I set the log level? Do I have to use a single log level for my entire project?
 
-Of course not! We all know what it's like to debug or add new features. You want verbose logging just for the part that you're currently working on. The lumberjack framework gives you per file debugging control. So you can change the log level on just that file you're editing.
+Of course not! We all know what it's like to debug or add new features. You want verbose logging just for the part that you're currently working on. The CocoaLumberjack framework gives you per file debugging control. So you can change the log level on just that file you're editing.
 
 (Of course there are many other advanced options, such as a global log level, per xcode configuration levels, per logger levels, etc. But we'll get to that in another article.)
 
@@ -106,9 +185,9 @@ Here's all it takes to convert your log statements:
 // TO THIS
 
 #import "Sprocket.h"
-#import "DDLog.h"
+#import "CocoaLumberjack.h"
 
-static const int ddLogLevel = LOG_LEVEL_VERBOSE;
+static const DDLogLevel ddLogLevel = DDLogLevelVerbose;
 
 @implementation Sprocket
 
@@ -124,17 +203,17 @@ Notice that the log level is declared as a constant. This means that DDLog state
 
 ### Automatic Reference Counting (ARC)
 
-The latest versions of Lumberjack use ARC. If you're not using ARC in your project, learn how to properly flag the Lumberjack files as ARC in your Xcode project on the [[ARC]] page.
+The latest versions of CocoaLumberjack use ARC. If you're not using ARC in your project, learn how to properly flag the CocoaLumberjack files as ARC in your Xcode project on the [ARC](ARC.md) page.
 
-### Learn More about Lumberjack
+### Learn More about CocoaLumberjack
 
 This is just the tip of the iceberg.
 
 Find out how to:
 
--   [[Automatically use different log levels for your debug vs release builds | XcodeTricks]]
--   [[Tailor the log levels to suite your needs | CustomLogLevels]]
--   [[Filter logs based on logger settings | PerLoggerLogLevels]]
--   [[Write your own custom formatters | CustomFormatters]]
--   [[Write your own custom loggers | CustomLoggers]]
--   [[And more... | Home]]
+-   [Automatically use different log levels for your debug vs release builds](XcodeTricks.md)
+-   [Tailor the log levels to suite your needs](CustomLogLevels.md)
+-   [Filter logs based on logger settings](PerLoggerLogLevels.md)
+-   [Write your own custom formatters](CustomFormatters.md)
+-   [Write your own custom loggers](CustomLoggers.md)
+-   [And more...](README.md)
